@@ -1008,12 +1008,13 @@ static void gattClientScanNative(JNIEnv* env, jobject object, jboolean start) {
 
 static void gattClientConnectNative(JNIEnv* env, jobject object, jint clientif,
                                     jstring address, jboolean isDirect,
-                                    jint transport, jint initiating_phys) {
+                                    jint transport, jboolean opportunistic,
+                                    jint initiating_phys) {
   if (!sGattIf) return;
 
   bt_bdaddr_t bda;
   jstr2bdaddr(env, &bda, address);
-  sGattIf->client->connect(clientif, &bda, isDirect, transport,
+  sGattIf->client->connect(clientif, &bda, isDirect, transport, opportunistic,
                            initiating_phys);
 }
 
@@ -1730,6 +1731,10 @@ static void advertiseCleanupNative(JNIEnv* env, jobject object) {
   }
 }
 
+static uint32_t INTERVAL_MAX = 0xFFFFFF;
+// Always give controller 31.25ms difference between min and max
+static uint32_t INTERVAL_DELTA = 50;
+
 static AdvertiseParameters parseParams(JNIEnv* env, jobject i) {
   AdvertiseParameters p;
 
@@ -1762,9 +1767,13 @@ static AdvertiseParameters parseParams(JNIEnv* env, jobject i) {
   if (isAnonymous) props |= 0x20;
   if (includeTxPower) props |= 0x40;
 
+  if (interval > INTERVAL_MAX - INTERVAL_DELTA) {
+    interval = INTERVAL_MAX - INTERVAL_DELTA;
+  }
+
   p.advertising_event_properties = props;
   p.min_interval = interval;
-  p.max_interval = interval + 50;
+  p.max_interval = interval + INTERVAL_DELTA;
   p.channel_map = 0x07; /* all channels */
   p.tx_power = txPowerLevel;
   p.primary_advertising_phy = primaryPhy;
@@ -2172,7 +2181,7 @@ static JNINativeMethod sMethods[] = {
      (void*)gattClientRegisterAppNative},
     {"gattClientUnregisterAppNative", "(I)V",
      (void*)gattClientUnregisterAppNative},
-    {"gattClientConnectNative", "(ILjava/lang/String;ZII)V",
+    {"gattClientConnectNative", "(ILjava/lang/String;ZIZI)V",
      (void*)gattClientConnectNative},
     {"gattClientDisconnectNative", "(ILjava/lang/String;I)V",
      (void*)gattClientDisconnectNative},
