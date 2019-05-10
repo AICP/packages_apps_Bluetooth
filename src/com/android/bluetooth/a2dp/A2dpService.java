@@ -933,10 +933,7 @@ public class A2dpService extends ProfileService {
             BluetoothCodecStatus codecStatus = sm.getCodecStatus();
             if (codecStatus != null) {
                 for (BluetoothCodecConfig config : codecStatus.getCodecsSelectableCapabilities()) {
-                    boolean isMandatoryCodecWithDualChannel = (config.isMandatoryCodec()
-                            && (config.getChannelMode() & config.CHANNEL_MODE_DUAL_CHANNEL)
-                                   == config.CHANNEL_MODE_DUAL_CHANNEL);
-                    if (!config.isMandatoryCodec() || isMandatoryCodecWithDualChannel) {
+                    if (!config.isMandatoryCodec()) {
                         supportsOptional = true;
                         break;
                     }
@@ -944,11 +941,11 @@ public class A2dpService extends ProfileService {
             }
         }
         if (previousSupport == BluetoothA2dp.OPTIONAL_CODECS_SUPPORT_UNKNOWN
-                || previousSupport == BluetoothA2dp.OPTIONAL_CODECS_NOT_SUPPORTED) {
+                || supportsOptional != (previousSupport
+                                    == BluetoothA2dp.OPTIONAL_CODECS_SUPPORTED)) {
             setSupportsOptionalCodecs(device, supportsOptional);
         }
-        if (supportsOptional
-                || previousSupport == BluetoothA2dp.OPTIONAL_CODECS_SUPPORTED) {
+        if (supportsOptional) {
             int enabled = getOptionalCodecsEnabled(device);
             if (enabled == BluetoothA2dp.OPTIONAL_CODECS_PREF_ENABLED) {
                 enableOptionalCodecs(device);
